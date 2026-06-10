@@ -1,0 +1,1101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>tem — Bill Explanation Agent</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --sidebar-bg: #0B0B24;
+      --sidebar-width: 220px;
+      --accent: #4F6EF7;
+      --accent-teal: #00C9D4;
+      --accent-gold: #F5A623;
+      --accent-violet: #8B5CF6;
+      --bg: #F4F5FA;
+      --card: #FFFFFF;
+      --text-primary: #111827;
+      --text-secondary: #6B7280;
+      --text-muted: #9CA3AF;
+      --border: #E5E7EB;
+      --red: #EF4444;
+      --red-soft: #FEF2F2;
+      --orange: #F59E0B;
+      --orange-soft: #FFFBEB;
+      --green: #10B981;
+      --green-soft: #ECFDF5;
+      --radius: 12px;
+      --radius-sm: 8px;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text-primary);
+      display: flex;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* ─── SIDEBAR ─── */
+    .sidebar {
+      width: var(--sidebar-width);
+      background: var(--sidebar-bg);
+      display: flex;
+      flex-direction: column;
+      padding: 24px 0;
+      flex-shrink: 0;
+    }
+    .sidebar-logo {
+      padding: 0 20px 28px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .logo-mark {
+      width: 30px;
+      height: 30px;
+      background: linear-gradient(135deg, var(--accent-teal), var(--accent));
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 14px;
+      color: white;
+      letter-spacing: -0.5px;
+    }
+    .logo-text {
+      color: white;
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+    }
+    .sidebar-account {
+      padding: 0 16px 24px;
+    }
+    .account-pill {
+      background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: var(--radius-sm);
+      padding: 10px 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .account-avatar {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #6366F1, var(--accent-teal));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 700;
+      color: white;
+      flex-shrink: 0;
+    }
+    .account-info { overflow: hidden; }
+    .account-name {
+      color: white;
+      font-size: 12px;
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .account-sub { color: rgba(255,255,255,0.45); font-size: 10px; margin-top: 1px; }
+
+    .nav { flex: 1; padding: 0 12px; }
+    .nav-section-label {
+      color: rgba(255,255,255,0.3);
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 0 8px 8px;
+    }
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 10px;
+      border-radius: var(--radius-sm);
+      color: rgba(255,255,255,0.5);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      margin-bottom: 2px;
+      transition: all 0.15s;
+      text-decoration: none;
+    }
+    .nav-item:hover { background: rgba(255,255,255,0.07); color: rgba(255,255,255,0.85); }
+    .nav-item.active {
+      background: rgba(79, 110, 247, 0.18);
+      color: white;
+    }
+    .nav-item.active .nav-icon { color: var(--accent); }
+    .nav-icon { width: 16px; text-align: center; font-size: 15px; flex-shrink: 0; }
+    .nav-badge {
+      margin-left: auto;
+      background: var(--red);
+      color: white;
+      font-size: 10px;
+      font-weight: 700;
+      border-radius: 10px;
+      padding: 1px 6px;
+      min-width: 18px;
+      text-align: center;
+    }
+    .sidebar-footer {
+      padding: 16px 12px 0;
+      border-top: 1px solid rgba(255,255,255,0.07);
+      margin-top: 8px;
+    }
+
+    /* ─── MAIN ─── */
+    .main {
+      flex: 1;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ─── TOPBAR ─── */
+    .topbar {
+      background: var(--card);
+      border-bottom: 1px solid var(--border);
+      padding: 0 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 56px;
+      flex-shrink: 0;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    .topbar-left { display: flex; align-items: center; gap: 8px; }
+    .breadcrumb {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+    }
+    .breadcrumb-item { color: var(--text-secondary); }
+    .breadcrumb-sep { color: var(--text-muted); }
+    .breadcrumb-current { color: var(--text-primary); font-weight: 600; }
+    .topbar-right { display: flex; align-items: center; gap: 12px; }
+    .topbar-btn {
+      width: 32px; height: 32px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: white;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+      font-size: 15px;
+      color: var(--text-secondary);
+      transition: all 0.15s;
+    }
+    .topbar-btn:hover { background: var(--bg); }
+    .notif-dot {
+      position: relative;
+    }
+    .notif-dot::after {
+      content: '';
+      position: absolute;
+      top: 5px; right: 5px;
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: var(--red);
+      border: 1.5px solid white;
+    }
+
+    /* ─── CONTENT ─── */
+    .content { padding: 28px 32px 40px; flex: 1; }
+
+    /* ─── INVOICE HEADER ─── */
+    .invoice-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 24px;
+    }
+    .invoice-header-left h1 {
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: -0.4px;
+      color: var(--text-primary);
+    }
+    .invoice-meta {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-top: 6px;
+    }
+    .invoice-ref {
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+    .invoice-period {
+      font-size: 13px;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .invoice-period::before { content: '·'; }
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .status-badge.pending {
+      background: var(--orange-soft);
+      color: #92400E;
+    }
+    .status-badge.paid { background: var(--green-soft); color: #065F46; }
+    .status-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+
+    .invoice-amount-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px 24px;
+      display: flex;
+      align-items: center;
+      gap: 32px;
+      min-width: 320px;
+    }
+    .amount-main {}
+    .amount-label { font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; }
+    .amount-value {
+      font-size: 32px;
+      font-weight: 800;
+      letter-spacing: -1px;
+      color: var(--text-primary);
+      margin-top: 2px;
+    }
+    .amount-change {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 13px;
+      font-weight: 600;
+      margin-top: 4px;
+    }
+    .amount-change.up { color: var(--red); }
+    .amount-change.down { color: var(--green); }
+    .amount-divider { width: 1px; height: 48px; background: var(--border); }
+    .amount-prev {}
+    .amount-prev-label { font-size: 11px; color: var(--text-muted); font-weight: 500; }
+    .amount-prev-value { font-size: 20px; font-weight: 700; color: var(--text-secondary); margin-top: 2px; }
+
+    /* ─── GRID ─── */
+    .grid-2 { display: grid; grid-template-columns: 1fr 340px; gap: 20px; align-items: start; }
+
+    /* ─── AGENT PANEL ─── */
+    .agent-panel {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    .agent-panel-header {
+      padding: 18px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .agent-identity {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .agent-avatar {
+      width: 34px;
+      height: 34px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, var(--accent), var(--accent-teal));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      flex-shrink: 0;
+      position: relative;
+    }
+    .agent-avatar::after {
+      content: '';
+      position: absolute;
+      bottom: -2px; right: -2px;
+      width: 10px; height: 10px;
+      background: var(--green);
+      border-radius: 50%;
+      border: 2px solid white;
+    }
+    .agent-name { font-size: 14px; font-weight: 700; color: var(--text-primary); }
+    .agent-role { font-size: 11px; color: var(--text-secondary); margin-top: 1px; }
+    .confidence-chip {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 10px;
+      background: var(--green-soft);
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 700;
+      color: #065F46;
+    }
+    .confidence-chip.low {
+      background: var(--orange-soft);
+      color: #92400E;
+    }
+
+    /* ─── AGENT MESSAGE ─── */
+    .agent-message {
+      padding: 20px;
+    }
+    .agent-bubble {
+      background: #F8F9FF;
+      border: 1px solid #E8EAFF;
+      border-radius: 4px 12px 12px 12px;
+      padding: 14px 16px;
+      font-size: 14px;
+      line-height: 1.65;
+      color: var(--text-primary);
+      margin-bottom: 16px;
+    }
+    .agent-bubble strong { font-weight: 700; color: var(--text-primary); }
+    .agent-bubble .highlight {
+      background: linear-gradient(135deg, rgba(79,110,247,0.1), rgba(0,201,212,0.08));
+      border-left: 3px solid var(--accent);
+      border-radius: 4px;
+      padding: 8px 12px;
+      margin: 10px 0;
+      font-size: 13px;
+    }
+    .agent-bubble .highlight strong { color: var(--accent); }
+
+    /* ─── FACTORS ─── */
+    .factors { margin-bottom: 16px; }
+    .factors-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      color: var(--text-muted);
+      margin-bottom: 10px;
+    }
+    .factor-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 12px;
+      background: var(--bg);
+      border-radius: var(--radius-sm);
+      margin-bottom: 6px;
+      border: 1px solid transparent;
+      transition: border-color 0.15s;
+    }
+    .factor-item:hover { border-color: var(--border); }
+    .factor-left { display: flex; align-items: center; gap: 10px; }
+    .factor-icon {
+      width: 28px; height: 28px;
+      border-radius: 7px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px;
+      flex-shrink: 0;
+    }
+    .factor-icon.orange { background: var(--orange-soft); }
+    .factor-icon.blue { background: #EEF2FF; }
+    .factor-icon.teal { background: #ECFEFF; }
+    .factor-name { font-size: 13px; font-weight: 600; color: var(--text-primary); }
+    .factor-sub { font-size: 11px; color: var(--text-secondary); margin-top: 1px; }
+    .factor-amount { font-size: 13px; font-weight: 700; color: var(--red); }
+    .factor-amount.neutral { color: var(--text-secondary); }
+
+    /* ─── ACTIONS ─── */
+    .agent-actions { display: flex; flex-direction: column; gap: 8px; }
+    .action-btn {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 11px 14px;
+      border-radius: var(--radius-sm);
+      border: 1.5px solid var(--border);
+      background: white;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-primary);
+      cursor: pointer;
+      transition: all 0.15s;
+      text-align: left;
+    }
+    .action-btn:hover { border-color: var(--accent); color: var(--accent); background: #F5F7FF; }
+    .action-btn.primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: white;
+      font-weight: 600;
+    }
+    .action-btn.primary:hover { background: #3D5AE0; border-color: #3D5AE0; }
+    .action-btn-icon { font-size: 15px; }
+
+    /* ─── CHART PANEL ─── */
+    .chart-panel {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      margin-bottom: 20px;
+    }
+    .chart-panel-header {
+      padding: 18px 20px 14px;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+    }
+    .chart-title { font-size: 14px; font-weight: 700; color: var(--text-primary); }
+    .chart-subtitle { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+    .chart-legend {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text-secondary);
+    }
+    .legend-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .legend-item.highlighted .legend-dot {
+      width: 10px; height: 10px;
+    }
+    .chart-wrap { padding: 0 20px 20px; position: relative; }
+    .anomaly-label {
+      position: absolute;
+      top: 12px;
+      left: 50%;
+      transform: translateX(-30%);
+      background: var(--orange);
+      color: white;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      pointer-events: none;
+    }
+
+    /* ─── SITE BREAKDOWN ─── */
+    .site-breakdown {
+      padding: 0 20px 20px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+    .site-card {
+      padding: 12px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .site-card:hover { border-color: var(--accent); }
+    .site-card.anomaly {
+      border-color: var(--orange);
+      background: var(--orange-soft);
+    }
+    .site-card-name { font-size: 11px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em; }
+    .site-card-kwh { font-size: 16px; font-weight: 800; color: var(--text-primary); margin-top: 4px; letter-spacing: -0.4px; }
+    .site-card-change { font-size: 11px; font-weight: 600; margin-top: 3px; }
+    .site-card-change.up { color: var(--red); }
+    .site-card-change.down { color: var(--green); }
+    .site-card-change.anomaly-flag { color: var(--orange); }
+    .site-anomaly-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      font-size: 9px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #92400E;
+      background: rgba(245,158,11,0.2);
+      border-radius: 4px;
+      padding: 2px 5px;
+      margin-top: 5px;
+    }
+
+    /* ─── GRACEFUL FAILURE ─── */
+    .failure-panel {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      display: none;
+    }
+    .failure-panel.visible { display: block; }
+    .failure-header {
+      padding: 18px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .failure-icon {
+      width: 34px; height: 34px;
+      background: var(--orange-soft);
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px;
+    }
+    .failure-title { font-size: 14px; font-weight: 700; }
+    .failure-body { padding: 20px; }
+    .failure-bubble {
+      background: var(--orange-soft);
+      border: 1px solid rgba(245,158,11,0.2);
+      border-radius: 4px 12px 12px 12px;
+      padding: 14px 16px;
+      font-size: 14px;
+      line-height: 1.65;
+      color: #92400E;
+      margin-bottom: 16px;
+    }
+    .failure-data {
+      background: var(--bg);
+      border-radius: var(--radius-sm);
+      padding: 12px 14px;
+      margin-bottom: 14px;
+    }
+    .failure-data-label { font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px; }
+    .failure-row { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 5px; color: var(--text-secondary); }
+    .failure-row strong { color: var(--text-primary); font-weight: 600; }
+
+    /* ─── TOGGLE ─── */
+    .demo-toggle {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 16px;
+      background: #1a1a3e;
+      border-radius: var(--radius-sm);
+      margin-bottom: 20px;
+      font-size: 12px;
+      color: rgba(255,255,255,0.6);
+    }
+    .demo-toggle strong { color: white; }
+    .toggle-switch {
+      display: flex;
+      background: rgba(255,255,255,0.1);
+      border-radius: 20px;
+      padding: 2px;
+      margin-left: auto;
+      gap: 2px;
+    }
+    .toggle-opt {
+      padding: 4px 12px;
+      border-radius: 16px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      color: rgba(255,255,255,0.5);
+      transition: all 0.15s;
+    }
+    .toggle-opt.active {
+      background: white;
+      color: #1a1a3e;
+    }
+
+    /* ─── TYPING INDICATOR ─── */
+    @keyframes blink {
+      0%, 80%, 100% { opacity: 0; transform: scale(0.7); }
+      40% { opacity: 1; transform: scale(1); }
+    }
+    .typing-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--accent);
+      display: inline-block;
+      margin: 0 2px;
+      animation: blink 1.2s infinite;
+    }
+    .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+    .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+    /* ─── SCROLLBAR ─── */
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+    /* ─── STATES ─── */
+    .state-explained { display: block; }
+    .state-failure { display: none; }
+    body.failure-mode .state-explained { display: none; }
+    body.failure-mode .state-failure { display: block; }
+  </style>
+</head>
+<body>
+
+<!-- ─── SIDEBAR ─── -->
+<nav class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-mark">t</div>
+    <span class="logo-text">tem</span>
+  </div>
+
+  <div class="sidebar-account">
+    <div class="account-pill">
+      <div class="account-avatar">ML</div>
+      <div class="account-info">
+        <div class="account-name">Meridian Logistics</div>
+        <div class="account-sub">3 sites · RED contract</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="nav">
+    <div style="margin-bottom: 20px;">
+      <div class="nav-section-label">Overview</div>
+      <a class="nav-item" href="#"><span class="nav-icon">⬛</span> Dashboard</a>
+      <a class="nav-item active" href="#"><span class="nav-icon">🧾</span> Invoices <span class="nav-badge">1</span></a>
+      <a class="nav-item" href="#"><span class="nav-icon">⚡</span> Consumption</a>
+    </div>
+    <div>
+      <div class="nav-section-label">Account</div>
+      <a class="nav-item" href="#"><span class="nav-icon">🏢</span> Sites</a>
+      <a class="nav-item" href="#"><span class="nav-icon">💳</span> Payments</a>
+      <a class="nav-item" href="#"><span class="nav-icon">📋</span> Contract</a>
+    </div>
+  </div>
+
+  <div class="sidebar-footer">
+    <a class="nav-item" href="#"><span class="nav-icon">⚙️</span> Settings</a>
+    <a class="nav-item" href="#"><span class="nav-icon">💬</span> Support</a>
+  </div>
+</nav>
+
+<!-- ─── MAIN ─── -->
+<div class="main">
+
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="breadcrumb">
+        <span class="breadcrumb-item">Invoices</span>
+        <span class="breadcrumb-sep">›</span>
+        <span class="breadcrumb-current">INV-2024-061</span>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <div class="topbar-btn notif-dot">🔔</div>
+      <div class="topbar-btn">⬇️</div>
+    </div>
+  </div>
+
+  <!-- CONTENT -->
+  <div class="content">
+
+    <!-- DEMO TOGGLE -->
+    <div class="demo-toggle">
+      <strong>Demo mode</strong> — toggle agent state to see graceful failure
+      <div class="toggle-switch">
+        <div class="toggle-opt active" id="toggle-explained" onclick="setMode('explained')">Agent explains</div>
+        <div class="toggle-opt" id="toggle-failure" onclick="setMode('failure')">Low confidence</div>
+      </div>
+    </div>
+
+    <!-- INVOICE HEADER -->
+    <div class="invoice-header">
+      <div class="invoice-header-left">
+        <h1>June Invoice</h1>
+        <div class="invoice-meta">
+          <span class="invoice-ref">INV-2024-061</span>
+          <span class="invoice-period">1–30 June 2024</span>
+          <span style="margin-left: 4px;"><span class="status-badge pending"><span class="status-dot"></span>Due 15 July</span></span>
+        </div>
+      </div>
+      <div class="invoice-amount-card">
+        <div class="amount-main">
+          <div class="amount-label">Total Due</div>
+          <div class="amount-value">£4,847</div>
+          <div class="amount-change up">↑ £1,148 vs last month</div>
+        </div>
+        <div class="amount-divider"></div>
+        <div class="amount-prev">
+          <div class="amount-prev-label">May 2024</div>
+          <div class="amount-prev-value">£3,699</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MAIN GRID -->
+    <div class="grid-2">
+
+      <!-- LEFT COLUMN -->
+      <div>
+        <!-- CHART PANEL -->
+        <div class="chart-panel">
+          <div class="chart-panel-header">
+            <div>
+              <div class="chart-title">Consumption by site</div>
+              <div class="chart-subtitle">Daily kWh · June 2024</div>
+            </div>
+            <div class="chart-legend">
+              <div class="legend-item"><div class="legend-dot" style="background:#4F6EF7;"></div> Bradford depot</div>
+              <div class="legend-item"><div class="legend-dot" style="background:#00C9D4;"></div> Leeds warehouse</div>
+              <div class="legend-item"><div class="legend-dot" style="background:#F5A623;"></div> Sheffield office</div>
+            </div>
+          </div>
+          <div class="chart-wrap">
+            <div class="anomaly-label">⚠ Anomaly Jun 1–8</div>
+            <canvas id="consumptionChart" height="190"></canvas>
+          </div>
+          <div class="site-breakdown">
+            <div class="site-card anomaly">
+              <div class="site-card-name">Bradford depot</div>
+              <div class="site-card-kwh">18,420 kWh</div>
+              <div class="site-card-change anomaly-flag">↑ 58% vs May</div>
+              <div class="site-anomaly-badge">⚠ Anomaly</div>
+            </div>
+            <div class="site-card">
+              <div class="site-card-name">Leeds warehouse</div>
+              <div class="site-card-kwh">9,102 kWh</div>
+              <div class="site-card-change up">↑ 6% vs May</div>
+            </div>
+            <div class="site-card">
+              <div class="site-card-name">Sheffield office</div>
+              <div class="site-card-kwh">4,831 kWh</div>
+              <div class="site-card-change down">↓ 3% vs May</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT COLUMN -->
+      <div>
+
+        <!-- EXPLAINED STATE -->
+        <div class="state-explained">
+          <div class="agent-panel">
+            <div class="agent-panel-header">
+              <div class="agent-identity">
+                <div class="agent-avatar">✦</div>
+                <div>
+                  <div class="agent-name">tem Agent</div>
+                  <div class="agent-role">Bill analysis · Just now</div>
+                </div>
+              </div>
+              <div class="confidence-chip">
+                <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><circle cx="5" cy="5" r="4" fill="#10B981"/><path d="M3 5l1.5 1.5L7 3.5" stroke="white" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                94% confident
+              </div>
+            </div>
+
+            <div class="agent-message">
+              <div class="agent-bubble">
+                Your June invoice is <strong>£1,148 higher than May</strong>. I've found two reasons, and I'm confident they account for the full difference.
+                <div class="highlight">
+                  <strong>Bradford depot used 58% more electricity</strong> between June 1–8, during the cold snap. The HVAC system ran for an extended period — this aligns with temperature data for BD1 that week.
+                </div>
+                There was also a <strong>unit rate step-up</strong> on June 1, from 24.2p to 26.1p/kWh, as specified in your contract. This added £187 across all sites at normal usage.
+              </div>
+
+              <div class="factors">
+                <div class="factors-label">Cost breakdown</div>
+                <div class="factor-item">
+                  <div class="factor-left">
+                    <div class="factor-icon orange">🌡️</div>
+                    <div>
+                      <div class="factor-name">Bradford HVAC spike</div>
+                      <div class="factor-sub">Jun 1–8 · 6,820 kWh excess</div>
+                    </div>
+                  </div>
+                  <div class="factor-amount">+£893</div>
+                </div>
+                <div class="factor-item">
+                  <div class="factor-left">
+                    <div class="factor-icon blue">📄</div>
+                    <div>
+                      <div class="factor-name">Unit rate step-up</div>
+                      <div class="factor-sub">Contract clause 4.2 · +1.9p/kWh</div>
+                    </div>
+                  </div>
+                  <div class="factor-amount">+£187</div>
+                </div>
+                <div class="factor-item">
+                  <div class="factor-left">
+                    <div class="factor-icon teal">📊</div>
+                    <div>
+                      <div class="factor-name">Other sites (normal)</div>
+                      <div class="factor-sub">Leeds + Sheffield · within range</div>
+                    </div>
+                  </div>
+                  <div class="factor-amount neutral">+£68</div>
+                </div>
+              </div>
+
+              <div class="agent-actions">
+                <button class="action-btn primary" onclick="handleAction('ok')">
+                  <span class="action-btn-icon">✓</span> That makes sense, thanks
+                </button>
+                <button class="action-btn" onclick="handleAction('reduce')">
+                  <span class="action-btn-icon">💡</span> How can I reduce Bradford's usage?
+                </button>
+                <button class="action-btn" onclick="handleAction('escalate')">
+                  <span class="action-btn-icon">👤</span> I'd still like someone to check this
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- GRACEFUL FAILURE STATE -->
+        <div class="state-failure">
+          <div class="agent-panel">
+            <div class="agent-panel-header">
+              <div class="agent-identity">
+                <div class="agent-avatar" style="background: linear-gradient(135deg, var(--orange), #F59E0B);">✦</div>
+                <div>
+                  <div class="agent-name">tem Agent</div>
+                  <div class="agent-role">Bill analysis · Just now</div>
+                </div>
+              </div>
+              <div class="confidence-chip low">
+                ⚠ 41% confident
+              </div>
+            </div>
+            <div class="agent-message">
+              <div class="agent-bubble" style="background:#FFFBEB; border-color:#FDE68A; color:#92400E;">
+                Your June invoice is <strong>£1,148 higher than May</strong>. I can see a significant spike at Bradford depot, but I don't have enough data right now to tell you exactly why with confidence.
+                <div class="highlight" style="border-color: var(--orange); background: rgba(245,158,11,0.08);">
+                  <strong style="color: var(--orange);">I don't want to guess.</strong> This is worth a human review — I've flagged it as high priority so someone can investigate and get back to you quickly.
+                </div>
+                Here's what I do know:
+              </div>
+              <div class="failure-data">
+                <div class="failure-data-label">What I can see</div>
+                <div class="failure-row"><span>Bradford depot usage</span><strong>↑ 58% vs May</strong></div>
+                <div class="failure-row"><span>Spike started</span><strong>~June 1</strong></div>
+                <div class="failure-row"><span>Metering data</span><strong>Complete ✓</strong></div>
+                <div class="failure-row"><span>Root cause</span><strong>Not yet determined</strong></div>
+              </div>
+              <div class="agent-actions">
+                <button class="action-btn primary" onclick="handleAction('escalate-low')">
+                  <span class="action-btn-icon">👤</span> Yes, please investigate
+                </button>
+                <button class="action-btn" onclick="handleAction('callback')">
+                  <span class="action-btn-icon">📞</span> Request a callback
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- RESPONSE OVERLAY -->
+<div id="responseOverlay" style="display:none; position:fixed; inset:0; background:rgba(11,11,36,0.6); z-index:100; align-items:center; justify-content:center; backdrop-filter: blur(4px);">
+  <div style="background:white; border-radius:16px; padding:32px; max-width:380px; width:90%; text-align:center;">
+    <div style="font-size:40px; margin-bottom:12px;" id="overlayIcon">✓</div>
+    <div style="font-size:18px; font-weight:700; margin-bottom:8px;" id="overlayTitle">Got it</div>
+    <div style="font-size:14px; color:#6B7280; line-height:1.6; margin-bottom:24px;" id="overlayBody">Your invoice has been marked as understood.</div>
+    <button onclick="closeOverlay()" style="background:#4F6EF7; color:white; border:none; border-radius:8px; padding:10px 24px; font-size:14px; font-weight:600; cursor:pointer;">Done</button>
+  </div>
+</div>
+
+<script>
+  // ─── CHART ───────────────────────────────────────────────────────────────
+  const days = Array.from({length:30}, (_,i) => `${i+1} Jun`);
+
+  // Bradford depot — spike Jun 1-8
+  const bradford = [820,890,940,910,870,930,900,850,
+                    510,490,520,500,540,510,490,530,
+                    500,520,510,490,530,510,490,520,
+                    500,510,490,520,500,490];
+  const leeds   = [310,320,305,315,300,325,310,305,
+                   300,310,295,315,305,295,310,300,
+                   305,295,310,300,315,295,305,315,
+                   300,310,295,305,300,310];
+  const sheffield=[155,150,160,145,155,150,148,152,
+                   148,155,145,150,155,148,150,155,
+                   145,152,148,155,150,145,152,148,
+                   155,148,152,145,150,155];
+
+  const anomalyBg = 'rgba(245,158,11,0.07)';
+
+  const ctx = document.getElementById('consumptionChart').getContext('2d');
+
+  // Anomaly region plugin
+  const anomalyPlugin = {
+    id: 'anomalyRegion',
+    beforeDraw(chart) {
+      const {ctx: c, scales:{x,y}} = chart;
+      const x0 = x.getPixelForValue(0);
+      const x1 = x.getPixelForValue(7);
+      c.save();
+      c.fillStyle = 'rgba(245,158,11,0.10)';
+      c.fillRect(x0, y.top, x1-x0, y.bottom - y.top);
+      c.strokeStyle = 'rgba(245,158,11,0.4)';
+      c.lineWidth = 1;
+      c.setLineDash([4,3]);
+      c.beginPath(); c.moveTo(x1, y.top); c.lineTo(x1, y.bottom); c.stroke();
+      c.restore();
+    }
+  };
+
+  new Chart(ctx, {
+    type: 'line',
+    plugins: [anomalyPlugin],
+    data: {
+      labels: days,
+      datasets: [
+        {
+          label: 'Bradford depot',
+          data: bradford,
+          borderColor: '#4F6EF7',
+          backgroundColor: 'rgba(79,110,247,0.08)',
+          borderWidth: 2.5,
+          pointRadius: 0,
+          pointHoverRadius: 4,
+          tension: 0.4,
+          fill: true,
+        },
+        {
+          label: 'Leeds warehouse',
+          data: leeds,
+          borderColor: '#00C9D4',
+          backgroundColor: 'rgba(0,201,212,0.05)',
+          borderWidth: 2,
+          pointRadius: 0,
+          pointHoverRadius: 4,
+          tension: 0.4,
+          fill: true,
+        },
+        {
+          label: 'Sheffield office',
+          data: sheffield,
+          borderColor: '#F5A623',
+          backgroundColor: 'rgba(245,166,35,0.04)',
+          borderWidth: 2,
+          pointRadius: 0,
+          pointHoverRadius: 4,
+          tension: 0.4,
+          fill: true,
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#1A1A3E',
+          titleColor: 'rgba(255,255,255,0.6)',
+          bodyColor: 'white',
+          padding: 12,
+          cornerRadius: 8,
+          displayColors: true,
+          callbacks: {
+            label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y.toFixed(0)} kWh`
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: { display: false },
+          border: { display: false },
+          ticks: {
+            color: '#9CA3AF',
+            font: { size: 10 },
+            maxTicksLimit: 8,
+            maxRotation: 0,
+          }
+        },
+        y: {
+          grid: { color: '#F3F4F6', lineWidth: 1 },
+          border: { display: false, dash: [4,4] },
+          ticks: {
+            color: '#9CA3AF',
+            font: { size: 10 },
+            callback: v => v + ' kWh',
+            maxTicksLimit: 5,
+          }
+        }
+      }
+    }
+  });
+
+  // ─── DEMO TOGGLE ──────────────────────────────────────────────────────────
+  function setMode(mode) {
+    document.getElementById('toggle-explained').classList.toggle('active', mode === 'explained');
+    document.getElementById('toggle-failure').classList.toggle('active', mode === 'failure');
+    document.body.classList.toggle('failure-mode', mode === 'failure');
+  }
+
+  // ─── ACTIONS ──────────────────────────────────────────────────────────────
+  const responses = {
+    'ok': {
+      icon: '✓',
+      title: 'Invoice marked as understood',
+      body: 'Thanks. The bill explanation has been saved to your account. We'll send a summary to your registered email.',
+    },
+    'reduce': {
+      icon: '💡',
+      title: 'Energy-saving recommendations',
+      body: 'I'll analyse Bradford's usage patterns and prepare a tailored report. You'll receive it in your portal within the hour.',
+    },
+    'escalate': {
+      icon: '👤',
+      title: 'Review requested',
+      body: 'A member of the tem team will review your invoice and follow up within 1 business day. Ticket #SUP-4412 created.',
+    },
+    'escalate-low': {
+      icon: '🔍',
+      title: 'Investigation opened',
+      body: 'Flagged as high priority. Our team will investigate Bradford's spike and contact you within 4 hours. Ticket #SUP-4413 created.',
+    },
+    'callback': {
+      icon: '📞',
+      title: 'Callback requested',
+      body: 'We'll call the number on your account within 2 hours. You can also reach us on 0800 123 4567.',
+    }
+  };
+
+  function handleAction(type) {
+    const r = responses[type];
+    document.getElementById('overlayIcon').textContent = r.icon;
+    document.getElementById('overlayTitle').textContent = r.title;
+    document.getElementById('overlayBody').textContent = r.body;
+    document.getElementById('responseOverlay').style.display = 'flex';
+  }
+
+  function closeOverlay() {
+    document.getElementById('responseOverlay').style.display = 'none';
+  }
+</script>
+</body>
+</html>

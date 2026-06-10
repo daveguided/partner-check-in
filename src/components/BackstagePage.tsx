@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { Ai, Time, Document, CheckmarkFilled, ChevronRight, Edit, ArrowRight, WarningAlt, Close, Play } from '@carbon/icons-react'
+import { Ai, CheckmarkFilled, ChevronRight, Edit, ArrowRight, WarningAlt, Close, Play } from '@carbon/icons-react'
 
 const CANDIDATE = 'David Rennick'
 const ROLE = 'Principal Product Design Engineer'

@@ -12,7 +12,7 @@ interface MorningBriefingProps {
 
 const TOP_CUSTOMERS = ['fallow-field', 'wren-co', 'northline']
 
-export default function MorningBriefing({ statuses, onSelectCustomer, onViewFeed }: MorningBriefingProps) {
+export default function MorningBriefing({ statuses: _statuses, onSelectCustomer, onViewFeed }: MorningBriefingProps) {
   const b = MORNING_BRIEFING
   const topCustomers = TOP_CUSTOMERS.map(id => CUSTOMERS.find(c => c.id === id)).filter(Boolean) as Customer[]
 
@@ -94,7 +94,6 @@ export default function MorningBriefing({ statuses, onSelectCustomer, onViewFeed
 
         <div className="divide-y divide-gray-50">
           {topCustomers.map((customer) => {
-            const status = statuses[customer.id] ?? customer.status
             return (
               <div
                 key={customer.id}

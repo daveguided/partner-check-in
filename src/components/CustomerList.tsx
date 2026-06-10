@@ -21,7 +21,7 @@ function HealthDot({ score }: { score: number }) {
   )
 }
 
-export default function CustomerList({ statuses, onViewCustomer }: CustomerListProps) {
+export default function CustomerList({ statuses: _statuses, onViewCustomer }: CustomerListProps) {
   const totalSpend = CUSTOMERS.reduce((a, c) => a + c.monthlySpend, 0)
   const avgHealth = Math.round(CUSTOMERS.reduce((a, c) => a + c.healthScore, 0) / CUSTOMERS.length)
 
@@ -40,7 +40,6 @@ export default function CustomerList({ statuses, onViewCustomer }: CustomerListP
       {/* Card grid */}
       <div className="grid grid-cols-3 gap-4">
         {CUSTOMERS.map((customer) => {
-          const status = statuses[customer.id] ?? customer.status
           const changePositive = customer.invoiceChangePercent > 0
           const isMissing = customer.missingData
 

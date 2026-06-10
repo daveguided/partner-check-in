@@ -60,7 +60,7 @@ export default function CustomerPreview({ customer }: CustomerPreviewProps) {
                   <XAxis dataKey="month" tick={{ fontSize: 10, fill: '#9CA3AF' }} tickLine={false} axisLine={false} />
                   <YAxis tick={{ fontSize: 10, fill: '#9CA3AF' }} tickLine={false} axisLine={false}
                     tickFormatter={(v) => `£${(v/1000).toFixed(0)}k`} />
-                  <Tooltip formatter={(v: number) => gbp(v)} />
+                  <Tooltip formatter={(v) => typeof v === 'number' ? gbp(v) : ''} />
                   <Bar dataKey="amount" radius={[3, 3, 0, 0]}>
                     {customer.invoiceSeries.map((e, i) => (
                       <Cell key={i} fill={e.forecast ? '#FDBA74' : '#E5E7EB'} />

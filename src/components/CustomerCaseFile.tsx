@@ -61,7 +61,6 @@ export default function CustomerCaseFile({
 }: CustomerCaseFileProps) {
   const [activeTab, setActiveTab] = useState<Tab>('overview')
 
-  const isMissing = customer.missingData
   const healthColor = customer.healthScore >= 75 ? 'text-brand-600' : customer.healthScore >= 50 ? 'text-amber-600' : 'text-red-600'
 
   return (
@@ -160,7 +159,7 @@ export default function CustomerCaseFile({
 
 // ─── Overview tab ─────────────────────────────────────────────────────────────
 
-function OverviewTab({ customer, status }: { customer: Customer; status: ActionStatus }) {
+function OverviewTab({ customer }: { customer: Customer; status?: ActionStatus }) {
   const isMissing = customer.missingData
 
   if (isMissing) {

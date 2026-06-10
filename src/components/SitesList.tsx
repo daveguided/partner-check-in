@@ -1,9 +1,6 @@
 import { Location, WarningAlt, Time } from '@carbon/icons-react'
 import { SITES } from '../data/mockData'
 
-const gbp = (n: number) =>
-  new Intl.NumberFormat('en-GB', { style: 'currency', currency: 'GBP', maximumFractionDigits: 0 }).format(n)
-
 const METER_STATUS = {
   available: { label: 'Live',     bg: 'bg-green-50',  text: 'text-green-700' },
   delayed:   { label: 'Delayed',  bg: 'bg-amber-50',  text: 'text-amber-700' },

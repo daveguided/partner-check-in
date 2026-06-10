@@ -1,4 +1,4 @@
-import { ArrowRight, Time, Group, WarningAlt } from '@carbon/icons-react'
+import { ArrowRight, Time, WarningAlt } from '@carbon/icons-react'
 import { RiskBadge, ActionBadge } from './StatusBadge'
 import { CUSTOMERS } from '../data/mockData'
 import type { ActionStatus } from '../types'

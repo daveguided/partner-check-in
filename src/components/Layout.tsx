@@ -1,4 +1,4 @@
-import { Dashboard, Group, WarningAlt, Settings, HelpFilled, Ai, Notification, Location, DocumentTasks } from '@carbon/icons-react'
+import { Dashboard, Group, Settings, HelpFilled, Ai, Notification, Location, DocumentTasks } from '@carbon/icons-react'
 import type { ReactNode } from 'react'
 import TemLogo from './TemLogo'
 
@@ -20,33 +20,34 @@ const W3 = 'rgba(255,255,255,0.3)'
 const W2 = 'rgba(255,255,255,0.2)'
 const W1 = 'rgba(255,255,255,0.12)'
 
-const SECTIONS = [
+type NavItem = { id: View; label: string; icon: typeof Dashboard; badge?: boolean }
+const SECTIONS: Array<{ label: string; items: NavItem[] }> = [
   {
     label: 'OVERVIEW',
     items: [
-      { id: 'briefing' as View, label: 'Morning Briefing', icon: Dashboard },
+      { id: 'briefing', label: 'Morning Briefing', icon: Dashboard },
     ],
   },
   {
     label: 'ACTIVITY',
     items: [
-      { id: 'feed' as View, label: 'Feed', icon: Notification, badge: true },
+      { id: 'feed', label: 'Feed', icon: Notification, badge: true },
     ],
   },
   {
     label: 'OBJECTS',
     items: [
-      { id: 'customers' as View, label: 'Customers',  icon: Group },
-      { id: 'sites'     as View, label: 'Sites',      icon: Location },
-      { id: 'contracts' as View, label: 'Contracts',  icon: DocumentTasks },
+      { id: 'customers', label: 'Customers',  icon: Group },
+      { id: 'sites',     label: 'Sites',      icon: Location },
+      { id: 'contracts', label: 'Contracts',  icon: DocumentTasks },
     ],
   },
 ]
 
 function NavButton({
-  id, label, icon: Icon, active, pendingCount, badge, onClick,
+  label, icon: Icon, active, pendingCount, badge, onClick,
 }: {
-  id: View
+  id?: View
   label: string
   icon: typeof Dashboard
   active: boolean

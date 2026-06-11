@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Layout from './components/Layout'
 import type { View } from './components/Layout'
 import MorningBriefing from './components/MorningBriefing'
@@ -12,9 +12,30 @@ import BackstagePage from './components/BackstagePage'
 import { CUSTOMERS } from './data/mockData'
 import type { ActionStatus } from './types'
 
+// ── Hash routing ───────────────────────────────────────────────────────────────
+const ROUTABLE_VIEWS: View[] = ['briefing', 'feed', 'customers', 'sites', 'contracts', 'backstage']
+
+function parseHash(): { view: View; customerId: string } {
+  const raw = window.location.hash.replace(/^#\/?/, '')
+  const [seg = '', id = ''] = raw.split('/')
+  if (seg === 'customers' && id && CUSTOMERS.some(c => c.id === id)) {
+    return { view: 'case-file', customerId: id }
+  }
+  const view = ROUTABLE_VIEWS.includes(seg as View) ? (seg as View) : 'briefing'
+  return { view, customerId: CUSTOMERS[0].id }
+}
+
+function pushHash(view: View, customerId?: string) {
+  const path = view === 'case-file' && customerId
+    ? `/customers/${customerId}`
+    : `/${view === 'briefing' ? '' : view}`
+  window.location.hash = path
+}
+
 export default function App() {
-  const [view, setView] = useState<View>('briefing')
-  const [selectedId, setSelectedId] = useState<string>(CUSTOMERS[0].id)
+  const initial = parseHash()
+  const [view, setViewState] = useState<View>(initial.view)
+  const [selectedId, setSelectedId] = useState<string>(initial.customerId)
   const [fromView, setFromView] = useState<View>('feed')
   const [statuses, setStatuses] = useState<Record<string, ActionStatus>>(() =>
     Object.fromEntries(CUSTOMERS.map((c) => [c.id, c.status]))
@@ -23,22 +44,38 @@ export default function App() {
 
   const selectedCustomer = CUSTOMERS.find((c) => c.id === selectedId) ?? CUSTOMERS[0]
 
-  const handleStatusChange = (id: string, status: ActionStatus) => {
-    setStatuses((prev) => ({ ...prev, [id]: status }))
+  // Sync hash → state on browser back/forward
+  useEffect(() => {
+    const onHashChange = () => {
+      const { view: v, customerId: id } = parseHash()
+      setViewState(v)
+      setSelectedId(id)
+    }
+    window.addEventListener('hashchange', onHashChange)
+    return () => window.removeEventListener('hashchange', onHashChange)
+  }, [])
+
+  const navigate = (v: View) => {
+    setViewState(v)
+    pushHash(v)
   }
 
-  // Navigate to customer node, remembering which list we came from
   const handleViewCustomer = (id: string) => {
     setSelectedId(id)
     setFromView(view)
-    setView('case-file')
+    setViewState('case-file')
+    pushHash('case-file', id)
   }
 
-  // From morning briefing metric cards / recommended actions
   const handleSelectFromBriefing = (id: string) => {
     setSelectedId(id)
     setFromView('briefing')
-    setView('case-file')
+    setViewState('case-file')
+    pushHash('case-file', id)
+  }
+
+  const handleStatusChange = (id: string, status: ActionStatus) => {
+    setStatuses((prev) => ({ ...prev, [id]: status }))
   }
 
   const handleFeedbackSubmit = (status: ActionStatus) => {
@@ -52,12 +89,12 @@ export default function App() {
 
   return (
     <>
-      <Layout activeView={view} onNavigate={(v) => setView(v)} pendingCount={pendingCount}>
+      <Layout activeView={view} onNavigate={navigate} pendingCount={pendingCount}>
         {view === 'briefing' && (
           <MorningBriefing
             statuses={statuses}
             onSelectCustomer={handleSelectFromBriefing}
-            onViewFeed={() => setView('feed')}
+            onViewFeed={() => navigate('feed')}
           />
         )}
         {view === 'feed' && (
@@ -71,7 +108,7 @@ export default function App() {
             customer={selectedCustomer}
             status={statuses[selectedId] ?? selectedCustomer.status}
             onStatusChange={handleStatusChange}
-            onBack={() => setView(fromView)}
+            onBack={() => navigate(fromView)}
             onFeedbackOpen={() => setFeedbackOpen(true)}
           />
         )}

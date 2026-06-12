@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ArrowLeft, Favorite, Calendar, Receipt, Ticket, View, WarningAlt, ErrorFilled } from '@carbon/icons-react'
+import { ArrowLeft, ChevronRight, Favorite, Calendar, Receipt, Ticket, View, WarningAlt, ErrorFilled } from '@carbon/icons-react'
 import {
   BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer, ReferenceLine, Cell,
@@ -69,13 +69,21 @@ export default function CustomerCaseFile({
       <div className="sticky top-0 z-10 bg-white border-b border-gray-100">
         {/* Back + name row */}
         <div className="px-8 pt-5 pb-0">
-          <button
-            onClick={onBack}
-            className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-gray-700 transition-colors mb-3"
-          >
-            <ArrowLeft size={14} />
-            Risk Queue
-          </button>
+          <div className="flex items-center gap-2 mb-3">
+            <button
+              onClick={onBack}
+              className="flex items-center gap-1 text-sm text-gray-400 hover:text-gray-700 transition-colors flex-shrink-0"
+            >
+              <ArrowLeft size={14} />
+              Back
+            </button>
+            <span className="text-gray-200 text-sm" aria-hidden="true">·</span>
+            <nav className="flex items-center gap-1.5 text-sm text-gray-400">
+              <span>Customers</span>
+              <ChevronRight size={12} className="text-gray-300 flex-shrink-0" />
+              <span className="text-gray-700 font-medium">{customer.name}</span>
+            </nav>
+          </div>
 
           <div className="flex items-start justify-between gap-4 mb-4">
             <div>

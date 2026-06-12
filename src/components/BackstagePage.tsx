@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, memo } from 'react'
 import { Ai, CheckmarkFilled, ChevronRight, Edit, ArrowRight, WarningAlt, Close, Play } from '@carbon/icons-react'
 
 const CANDIDATE = 'David Rennick'
@@ -32,7 +32,7 @@ const TIMELINE = [
   { label: 'tem wordmark SVG integrated', note: 'Real logo SVG from tem.energy, currentColor fill for dark/light theme compatibility.' },
   { label: 'IBM Carbon icons → replaced Lucide', note: 'Enterprise-grade icon set. More authoritative for energy infrastructure. 20+ icon mappings resolved.' },
   { label: 'Ubuntu → DM Sans', note: "DM Sans is the closest freely available match to PP Neue Montreal (tem's actual typeface). Optical size axis: 9..40." },
-  { label: 'Orange gradient sidebar applied to both apps', note: 'linear-gradient(180deg, #ff4500 0%, #ff7018 100%). White text with rgba opacity scale for hierarchy on colour.' },
+  { label: 'Orange gradient sidebar applied to partner-check-in', note: 'linear-gradient(180deg, #ff4500 0%, #ff7018 100%). White text with rgba opacity scale for hierarchy on colour. bill-seems-wrong uses orange as an accent only — the dark background carries that app.' },
   { label: 'Broker SVG icon scraped via puppeteer', note: 'tem.energy/get-in-touch renders via Framer at runtime. Headless Chrome required to resolve symbol IDs from DOM. Icon placed white, 14px, left of "Partner" in nav.' },
   { label: 'Backstage page (this one)', note: 'Transparent documentation of the entire build: strategy, prompts, AI tooling audit, design decisions.' },
   { label: 'OOUX IA refactor', note: 'Risk Queue → Feed (event stream with peek expansion). Customer Accounts → Customers (card grid). Added Sites and Contracts as new first-class objects. Nav sectioned into Overview / Activity / Objects.' },
@@ -50,6 +50,7 @@ const DECISIONS = [
   { title: 'Draft tones as a first-class feature', body: "Three email tones (Standard, Softer, Savings-angle) reflect real broker workflow: some clients want data, some want reassurance, some need to see opportunity. The agent drafts all three. The broker picks. This is agentic UX done right: AI prepares options, human decides." },
   { title: 'Confidence as a UX concept', body: 'Confidence scores are visible on every customer card. Below 60%, the agent requests human review rather than recommending an action. Making confidence a UI concern — not just a backend metric — respects the broker\'s ability to calibrate their own trust in the system.' },
   { title: 'OOUX navigation — objects, not screens', body: "Restructured the IA around nouns (Feed, Customers, Sites, Contracts) not verbs (Risk Queue, Accounts). Each object has a list and a node. Navigation flows: Feed event → peek → Customer node; Customer card → Customer node. Two paths converge on the same node — exactly the OOUX pattern." },
+  { title: 'Not a chatbot — a dashboard managed by AI', body: "There is no chat interface here. No prompt box, no conversational turn-taking. The AI runs in the background — surveying data across all customer accounts overnight, scoring risk, drafting copy, disclosing uncertainty — and the broker interacts with the outputs through structured UI: cards, confidence bars, draft email panels, action buttons. This is the more useful product. A chat interface puts the cognitive load on the broker to know what to ask. A managed dashboard puts the cognitive load on the agent to know what to surface." },
 ]
 
 const PROMPTS = [
@@ -99,7 +100,8 @@ const NEXT = [
   'Notification system — agent surfaces new risks proactively',
   'A/B data on email tone selection — which tone actually converts',
   'More graceful failure states — what happens when the API is entirely down',
-  'Live Vercel deploy with shareable link',
+  'Agent Skills & Threads — the current agent is monolithic: one background process per customer. The natural next step is specialist threads: billing anomaly detection, renewal risk scoring, meter health monitoring, and market movement alerts — each running independently, each configurable, all surfacing through the same Feed.',
+  'Agent Config (behind Settings) — a panel for defining which threads are active, setting action gates, and wiring up skill chains. The pattern follows Claude Code\'s MCP server configuration but shaped for energy broker workflows: which anomaly types trigger which analysis chains, which customers require human-in-the-loop on every action, and what confidence threshold triggers auto-escalation vs. passive flagging.',
 ]
 
 // ── Modal types ────────────────────────────────────────────────────────────────
@@ -116,20 +118,50 @@ const MODAL_META: Record<NonNullable<ModalType>, { title: string; subtitle: stri
   },
   video: {
     title: 'Vibecoding Session — Abandoned at 30 min',
-    subtitle: 'Playing at 4× speed · No audio',
+    subtitle: 'Playing at 2× speed · Muted',
   },
 }
 
-// ── Full-screen modal ──────────────────────────────────────────────────────────
-function FullScreenModal({ type, onClose }: { type: NonNullable<ModalType>; onClose: () => void }) {
-  const videoRef = useRef<HTMLVideoElement>(null)
-  const meta = MODAL_META[type]
+// ── YouTube player (2× speed, muted) ──────────────────────────────────────────
+const YouTubePlayer = memo(function YouTubePlayer() {
+  const containerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    if (type === 'video' && videoRef.current) {
-      videoRef.current.playbackRate = 4
+    let player: any
+
+    const init = () => {
+      if (!containerRef.current) return
+      player = new (window as any).YT.Player(containerRef.current, {
+        width: '100%',
+        height: '100%',
+        videoId: 'zhT8oMrf8zo',
+        playerVars: { autoplay: 1, mute: 1, controls: 1, rel: 0, modestbranding: 1, playsinline: 1 },
+        events: {
+          onReady: (e: any) => { e.target.setPlaybackRate(2); e.target.playVideo() },
+        },
+      })
     }
-  }, [type])
+
+    if ((window as any).YT?.Player) {
+      init()
+    } else {
+      ;(window as any).onYouTubeIframeAPIReady = init
+      if (!document.querySelector('script[src*="youtube.com/iframe_api"]')) {
+        const tag = document.createElement('script')
+        tag.src = 'https://www.youtube.com/iframe_api'
+        document.head.appendChild(tag)
+      }
+    }
+
+    return () => { try { player?.destroy() } catch { /* noop */ } }
+  }, [])
+
+  return <div ref={containerRef} className="w-full h-full" />
+})
+
+// ── Full-screen modal ──────────────────────────────────────────────────────────
+function FullScreenModal({ type, onClose }: { type: NonNullable<ModalType>; onClose: () => void }) {
+  const meta = MODAL_META[type]
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
@@ -160,15 +192,7 @@ function FullScreenModal({ type, onClose }: { type: NonNullable<ModalType>; onCl
       </div>
       <div className="flex-1 overflow-hidden">
         {type === 'video' ? (
-          <video
-            ref={videoRef}
-            src="/Screen%20Recording%202026-06-09%20at%2010.18.32%20pm.mov"
-            autoPlay
-            muted
-            controls
-            className="w-full h-full"
-            style={{ objectFit: 'contain' }}
-          />
+          <YouTubePlayer />
         ) : (
           <iframe
             src={type === 'bsw' ? '/bill-seems-wrong/index.html' : '/tem-agent/index.html'}
@@ -345,7 +369,7 @@ export default function BackstagePage() {
                 <p>The customer "bill seems wrong" moment and the partner proactive check-in are <strong>the same event seen from two sides</strong>. When an invoice contains an anomaly: the customer is surprised (trust damage), and the broker doesn't know until the customer calls (relationship damage). Designing only one side misses the system.</p>
                 <p className="mt-3">A broker who proactively reaches out before the invoice lands <em>prevents</em> the "bill seems wrong" support ticket. The two UIs are cause and effect.</p>
               </div>
-              <p>This framing also shows a wider range of design skill: one dark information-dense UI (reactive), one light operational workspace (proactive), two different agentic UX contexts.</p>
+              <p>This framing also shows a wider range of design skill: one dark information-dense UI (reactive), one light operational workspace (proactive), two different agentic UX contexts. Neither is a chatbot — both are dashboards where the AI works in the background and the human acts on structured, surfaced outputs.</p>
             </div>
           </section>
 
@@ -425,7 +449,7 @@ export default function BackstagePage() {
                 </div>
                 <p className="text-sm text-gray-700 leading-relaxed">
                   The orange gradient (<code className="text-xs bg-white px-1 py-0.5 rounded border border-gray-200 text-gray-600">linear-gradient(180deg, #ff4500 → #ff7018)</code>) runs
-                  the full height of both app sidebars. It's the single most distinctive visual element. On colour,
+                  the full height of the partner-check-in sidebar. It's the single most distinctive visual element. On colour,
                   all text is white with an rgba opacity scale — 100%, 75%, 45%, 22%, 12% — creating a hierarchy
                   without any grey.
                 </p>

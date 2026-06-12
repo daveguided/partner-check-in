@@ -25,4 +25,6 @@ dist-ssr
 
 # Large video files — served locally only, not deployed to Vercel
 public/*.mov
+public/*.mp4
+public/Screen*
 .vercel
